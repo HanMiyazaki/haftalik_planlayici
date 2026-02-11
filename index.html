@@ -4,28 +4,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Haftalık Planlayıcı | Modern Çözüm</title>
+    <title>AcademicPlanner | Öğrenci Asistanı</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        /* Modern Renk Paleti ve Değişkenler */
+        /* --- Modern CSS Değişkenleri --- */
         :root {
-            --primary: #4f46e5;
-            /* İndigo-600: Öne çıkan renk */
-            --primary-hover: #4338ca;
-            /* İndigo-700: Hover rengi */
-            --bg-body: #f8fafc;
-            /* Slate-50: Arka plan */
-            --bg-surface: #ffffff;
-            /* Beyaz: Yüzeyler */
-            --text-main: #0f172a;
-            /* Slate-900: Ana metin */
+            --primary-blue: #3b82f6;
+            --primary-dark: #1d4ed8;
+            --accent-orange: #f59e0b;
+            --accent-yellow: #fbbf24;
+            --text-light: #ffffff;
+            --text-dark: #1e293b;
             --text-muted: #64748b;
-            /* Slate-500: Alt metin */
-            --border: #e2e8f0;
-            /* Slate-200: Kenarlıklar */
-            --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --bg-surface: #ffffff;
         }
 
-        /* Temel Sıfırlama */
+        /* --- Temel Ayarlar --- */
         * {
             margin: 0;
             padding: 0;
@@ -33,185 +27,232 @@
         }
 
         body {
-            font-family: var(--font-family);
-            background-color: var(--bg-body);
-            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-surface);
+            color: var(--text-dark);
             line-height: 1.6;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
             overflow-x: hidden;
-            -webkit-font-smoothing: antialiased;
-        }
-
-        /* Tipografi */
-        h1,
-        h2 {
-            line-height: 1.1;
-            letter-spacing: -0.025em;
         }
 
         a {
             text-decoration: none;
-            color: inherit;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
         }
 
-        /* NAVBAR Tasarımı */
+        /* --- Arka Plan Gradient Yapısı (Görseldeki gibi) --- */
+        .gradient-bg {
+            /* Mavi (Sol) ve Turuncu/Sarı (Sağ) karışımı */
+            background:
+                radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.8) 0%, transparent 60%),
+                radial-gradient(circle at 100% 0%, rgba(251, 191, 36, 0.6) 0%, transparent 50%),
+                linear-gradient(180deg, #eff6ff 0%, #ffffff 100%);
+            width: 100%;
+            min-height: 100vh;
+            /* Ekranı kapla */
+            position: relative;
+        }
+
+        /* --- Navbar --- */
         .navbar {
-            position: fixed;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 5%;
+            position: absolute;
+            /* Arka planın üzerine binmesi için */
             top: 0;
             left: 0;
             right: 0;
-            height: 70px;
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 5%;
-            z-index: 1000;
+            z-index: 10;
         }
 
         .logo {
-            font-size: 1.25rem;
+            font-size: 1.5rem;
             font-weight: 800;
-            color: var(--primary);
+            color: #1e3a8a;
+            /* Koyu lacivert */
             display: flex;
             align-items: center;
             gap: 0.5rem;
         }
 
-        .logo svg {
-            color: var(--primary);
-        }
-
         .nav-links {
             display: flex;
             gap: 2rem;
+            align-items: center;
         }
 
         .nav-link {
-            font-weight: 600;
+            font-weight: 500;
+            color: #334155;
             font-size: 0.95rem;
-            color: var(--text-muted);
-            padding: 0.5rem 0;
-            position: relative;
         }
 
-        .nav-link:hover,
-        .nav-link.active {
-            color: var(--primary);
+        .nav-link:hover {
+            color: var(--primary-blue);
         }
 
-        /* HERO (Giriş) Bölümü */
+        .nav-btn {
+            background-color: #2563eb;
+            color: white;
+            padding: 0.6rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .nav-btn:hover {
+            background-color: #1d4ed8;
+            transform: translateY(-1px);
+        }
+
+        /* --- Hero Section (Ana Bölüm) --- */
         .hero {
-            flex: 1;
             display: flex;
-            flex-direction: column;
-            justify-content: center;
             align-items: center;
-            text-align: center;
-            padding: 140px 20px 80px;
-            /* Navbar için üstten boşluk */
-            background: radial-gradient(circle at 50% 0%, #e0e7ff 0%, var(--bg-body) 70%);
+            justify-content: space-between;
+            padding: 160px 5% 80px;
+            /* Navbar payı */
+            gap: 4rem;
+            max-width: 1400px;
+            margin: 0 auto;
         }
 
-        .hero-badge {
-            display: inline-block;
-            background-color: #e0e7ff;
-            color: var(--primary);
-            padding: 0.35rem 1rem;
-            border-radius: 9999px;
-            font-size: 0.875rem;
-            font-weight: 700;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        .hero-text {
+            flex: 1;
+            max-width: 600px;
         }
 
         .hero h1 {
-            font-size: clamp(2.5rem, 5vw, 4rem);
-            font-weight: 900;
-            margin-bottom: 1.25rem;
-            background: linear-gradient(135deg, var(--text-main) 0%, var(--primary) 100%);
-            background-clip: text;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            max-width: 800px;
+            font-size: clamp(2.5rem, 5vw, 3.5rem);
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            color: var(--text-dark);
+            /* Görseldeki gibi koyu metin */
+        }
+
+        /* Başlıktaki bazı kelimeleri vurgulamak istersek */
+        .hero h1 span {
+            color: var(--primary-blue);
         }
 
         .hero p {
-            font-size: 1.125rem;
+            font-size: 1.15rem;
             color: var(--text-muted);
-            max-width: 600px;
             margin-bottom: 2.5rem;
-            line-height: 1.75;
+            line-height: 1.6;
         }
 
-        /* Çağrı Butonu (CTA) */
-        .hero-btn {
-            display: inline-flex;
+        .hero-cta {
+            background: linear-gradient(90deg, #f59e0b, #fbbf24);
+            color: white;
+            padding: 1rem 2.5rem;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+            display: inline-block;
+        }
+
+        .hero-cta:hover {
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.6);
+            transform: translateY(-2px);
+        }
+
+        .hero-image-container {
+            flex: 1;
+            display: flex;
+            justify-content: flex-end;
+            position: relative;
+        }
+
+        .hero-img {
+            width: 100%;
+            max-width: 600px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            /* Görselin kendisi */
+            display: block;
+            object-fit: cover;
+        }
+
+        /* --- Features (Özellikler) Bölümü --- */
+        .features {
+            background-color: white;
+            padding: 4rem 5%;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2.5rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .feature-card {
+            padding: 1rem;
+        }
+
+        .icon-box {
+            width: 50px;
+            height: 50px;
+            background-color: #eff6ff;
+            /* Çok açık mavi */
+            border-radius: 12px;
+            display: flex;
             align-items: center;
             justify-content: center;
-            padding: 1rem 2.5rem;
-            background-color: var(--primary);
-            color: white;
-            font-size: 1rem;
-            font-weight: 700;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2), 0 2px 4px -1px rgba(79, 70, 229, 0.1);
-            transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
+            margin-bottom: 1rem;
+            color: var(--primary-blue);
         }
 
-        .hero-btn:hover {
-            background-color: var(--primary-hover);
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3), 0 4px 6px -2px rgba(79, 70, 229, 0.15);
+        .feature-card h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: #1e293b;
+        }
+
+        .feature-card p {
+            color: #64748b;
+            font-size: 0.95rem;
         }
 
         /* Footer */
         footer {
             text-align: center;
             padding: 2rem;
-            color: var(--text-muted);
-            font-size: 0.875rem;
-            border-top: 1px solid var(--border);
-            background-color: var(--bg-surface);
+            color: #94a3b8;
+            font-size: 0.9rem;
+            background-color: #ffffff;
+            border-top: 1px solid #f1f5f9;
         }
 
-        /* Mobil Uyumluluk */
-        @media (max-width: 768px) {
-            .navbar {
-                padding: 0 1.5rem;
+        /* --- Mobil Uyumluluk --- */
+        @media (max-width: 968px) {
+            .hero {
+                flex-direction: column;
+                text-align: center;
+                padding-top: 120px;
             }
 
+            .hero-text {
+                margin: 0 auto;
+            }
+
+            .hero-image-container {
+                justify-content: center;
+                margin-top: 2rem;
+            }
+        }
+
+        @media (max-width: 600px) {
             .nav-links {
-                gap: 1.5rem;
-            }
-
-            .hero-badge {
-                margin-bottom: 1rem;
-            }
-
-            .hero p {
-                font-size: 1rem;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .logo span {
                 display: none;
-                /* Mobilde sadece ikon kalsın */
+                /* Mobilde menüyü basitleştirdik */
             }
 
-            .nav-links {
-                gap: 1rem;
-            }
-
-            .nav-link {
-                font-size: 0.85rem;
+            .navbar {
+                justify-content: center;
             }
         }
     </style>
@@ -219,43 +260,76 @@
 
 <body>
 
-    <!-- Üst Menü / Navbar -->
-    <nav class="navbar">
-        <a href="index.html" class="logo">
-            <!-- Basit bir Takvim İkonu (SVG) -->
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                <line x1="16" y1="2" x2="16" y2="6"></line>
-                <line x1="8" y1="2" x2="8" y2="6"></line>
-                <line x1="3" y1="10" x2="21" y2="10"></line>
-            </svg>
-            <span>Planlayıcı</span>
-        </a>
+    <div class="gradient-bg">
+        <nav class="navbar">
+            <a href="index.html" class="logo">AcademicPlanner</a>
+            <div class="nav-links">
+                <a href="#ozellikler" class="nav-link">Özellikler</a>
+                <a href="#" class="nav-link">Fiyatlandırma</a>
+                <a href="#" class="nav-link">Kaynaklar</a>
+                <a href="table_ver_4.html" class="nav-btn">Giriş Yap / Kayıt Ol</a>
+            </div>
+        </nav>
 
-        <div class="nav-links">
-            <a href="index.html" class="nav-link active">Anasayfa</a>
-            <a href="table_ver_4.html" class="nav-link">Veri Tablosu</a>
+        <main class="hero">
+            <div class="hero-text">
+                <h1>Akademik Hayatını <br><span>Kolayca</span> Organize Et</h1>
+                <p>
+                    Ders programını oluştur, ödevlerini takip et ve notlarını tek bir yerden yönet.
+                    Öğrenciler için tasarlanmış modern planlama asistanı.
+                </p>
+                <a href="table_ver_4.html" class="hero-cta">Hemen Başla</a>
+            </div>
+
+            <div class="hero-image-container">
+                <img src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+                    alt="Öğrenci Çalışırken" class="hero-img">
+            </div>
+        </main>
+    </div>
+
+    <section class="features" id="ozellikler">
+        <div class="feature-card">
+            <div class="icon-box">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+            </div>
+            <h3>Ders Planlama</h3>
+            <p>Haftalık ders programınızı zahmetsizce oluşturun ve görselleştirin.</p>
         </div>
-    </nav>
 
-    <!-- Giriş Bölümü (Hero) -->
-    <main class="hero">
-        <div class="hero-badge">Versiyon 4.0 Yayında 🚀</div>
+        <div class="feature-card">
+            <div class="icon-box">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+            </div>
+            <h3>Teslim Takibi</h3>
+            <p>Otomatik hatırlatıcılarla hiçbir ödevi veya sınavı kaçırmayın.</p>
+        </div>
 
-        <h1>Zamanını Yönet,<br>Geleceğini Tasarla.</h1>
+        <div class="feature-card">
+            <div class="icon-box">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
+                    <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
+                </svg>
+            </div>
+            <h3>Not Yönetimi</h3>
+            <p>Akademik performansınızı izleyin ve hedefler belirleyin.</p>
+        </div>
+    </section>
 
-        <p>
-            Haftalık ders programınızı, sınavlarınızı ve görevlerinizi tek bir çatı altında toplayın.
-            Basit, hızlı ve tamamen size özel bir dijital planlama deneyimi.
-        </p>
-
-        <a href="table_ver_4.html" class="hero-btn">Hemen Planla</a>
-    </main>
-
-    <!-- Alt Bilgi (Footer) -->
     <footer>
-        &copy; 2026 Haftalık Planlama Platformu. Tüm hakları saklıdır.
+        &copy; 2026 AcademicPlanner Platformu. Tüm hakları saklıdır.
     </footer>
 
 </body>
