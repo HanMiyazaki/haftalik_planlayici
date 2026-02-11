@@ -39,16 +39,14 @@
             transition: all 0.3s ease;
         }
 
-        /* --- Arka Plan Gradient Yapısı (Görseldeki gibi) --- */
+        /* --- Arka Plan Gradient Yapısı --- */
         .gradient-bg {
-            /* Mavi (Sol) ve Turuncu/Sarı (Sağ) karışımı */
             background:
                 radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.8) 0%, transparent 60%),
                 radial-gradient(circle at 100% 0%, rgba(251, 191, 36, 0.6) 0%, transparent 50%),
                 linear-gradient(180deg, #eff6ff 0%, #ffffff 100%);
             width: 100%;
             min-height: 100vh;
-            /* Ekranı kapla */
             position: relative;
         }
 
@@ -59,7 +57,6 @@
             align-items: center;
             padding: 1.5rem 5%;
             position: absolute;
-            /* Arka planın üzerine binmesi için */
             top: 0;
             left: 0;
             right: 0;
@@ -70,7 +67,6 @@
             font-size: 1.5rem;
             font-weight: 800;
             color: #1e3a8a;
-            /* Koyu lacivert */
             display: flex;
             align-items: center;
             gap: 0.5rem;
@@ -112,7 +108,6 @@
             align-items: center;
             justify-content: space-between;
             padding: 160px 5% 80px;
-            /* Navbar payı */
             gap: 4rem;
             max-width: 1400px;
             margin: 0 auto;
@@ -123,18 +118,47 @@
             max-width: 600px;
         }
 
+        /* --- Split Text Animasyon CSS --- */
         .hero h1 {
             font-size: clamp(2.5rem, 5vw, 3.5rem);
             font-weight: 800;
             line-height: 1.1;
             margin-bottom: 1.5rem;
             color: var(--text-dark);
-            /* Görseldeki gibi koyu metin */
+            overflow: hidden;
+            /* Animasyon dışına taşmayı önler */
         }
 
-        /* Başlıktaki bazı kelimeleri vurgulamak istersek */
-        .hero h1 span {
+        .split-word {
+            display: inline-block;
+            white-space: nowrap;
+            margin-right: 0.25em;
+            /* Kelimeler arası boşluk */
+        }
+
+        .split-char {
+            display: inline-block;
+            opacity: 0;
+            transform: translateY(100%);
+            /* Aşağıdan başlar */
+            transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.8s ease;
+        }
+
+        .split-char.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Özel renkli kelime (span içindeki) */
+        .highlight-text {
             color: var(--primary-blue);
+            display: inline-block;
+        }
+
+        /* Satır sonu (br sonrası) düzeltmesi */
+        .line-break {
+            display: block;
+            height: 0;
         }
 
         .hero p {
@@ -142,6 +166,11 @@
             color: var(--text-muted);
             margin-bottom: 2.5rem;
             line-height: 1.6;
+            opacity: 0;
+            /* Başlangıçta gizli */
+            transform: translateY(20px);
+            animation: fadeInUp 0.8s ease forwards 1s;
+            /* Başlık animasyonundan sonra gelir */
         }
 
         .hero-cta {
@@ -153,6 +182,11 @@
             font-size: 1.1rem;
             box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
             display: inline-block;
+            opacity: 0;
+            /* Başlangıçta gizli */
+            transform: translateY(20px);
+            animation: fadeInUp 0.8s ease forwards 1.2s;
+            /* Paragraftan sonra gelir */
         }
 
         .hero-cta:hover {
@@ -160,11 +194,28 @@
             transform: translateY(-2px);
         }
 
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         .hero-image-container {
             flex: 1;
             display: flex;
             justify-content: flex-end;
             position: relative;
+            opacity: 0;
+            transform: translateX(30px);
+            animation: fadeInRight 1s ease forwards 0.5s;
+        }
+
+        @keyframes fadeInRight {
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
         }
 
         .hero-img {
@@ -172,7 +223,6 @@
             max-width: 600px;
             border-radius: 20px;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            /* Görselin kendisi */
             display: block;
             object-fit: cover;
         }
@@ -190,13 +240,17 @@
 
         .feature-card {
             padding: 1rem;
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
         }
 
         .icon-box {
             width: 50px;
             height: 50px;
             background-color: #eff6ff;
-            /* Çok açık mavi */
             border-radius: 12px;
             display: flex;
             align-items: center;
@@ -248,7 +302,6 @@
         @media (max-width: 600px) {
             .nav-links {
                 display: none;
-                /* Mobilde menüyü basitleştirdik */
             }
 
             .navbar {
@@ -273,7 +326,11 @@
 
         <main class="hero">
             <div class="hero-text">
-                <h1>Akademik Hayatını <br><span>Kolayca</span> Organize Et</h1>
+                <h1 id="animated-heading">
+                    Akademik Hayatını <br>
+                    <span class="highlight-text">Kolayca</span> Organize Et
+                </h1>
+
                 <p>
                     Ders programını oluştur, ödevlerini takip et ve notlarını tek bir yerden yönet.
                     Öğrenciler için tasarlanmış modern planlama asistanı.
@@ -332,6 +389,74 @@
         &copy; 2026 AcademicPlanner Platformu. Tüm hakları saklıdır.
     </footer>
 
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const heading = document.getElementById('animated-heading');
+
+            if (heading) {
+                // Mevcut içeriği sakla ve işle
+                const originalContent = heading.innerHTML;
+                heading.innerHTML = ''; // Temizle
+
+                // HTML string'i geçici bir div'e koyarak parçalayalım (HTML taglerini korumak için)
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = originalContent;
+
+                const nodes = Array.from(tempDiv.childNodes);
+
+                nodes.forEach(node => {
+                    if (node.nodeType === 3) { // Metin Düğümü (Text Node)
+                        processTextNode(node.textContent, heading);
+                    } else if (node.tagName === 'BR') { // Satır sonu
+                        const br = document.createElement('div');
+                        br.className = 'line-break';
+                        heading.appendChild(br);
+                    } else { // Diğer elementler (örn: span)
+                        const wrapper = document.createElement(node.tagName);
+                        wrapper.className = node.className; // Sınıfları kopyala (highlight-text)
+                        heading.appendChild(wrapper);
+                        processTextNode(node.textContent, wrapper);
+                    }
+                });
+
+                // Animasyonu başlat
+                triggerAnimation();
+            }
+
+            function processTextNode(text, parent) {
+                const words = text.split(' ');
+                words.forEach((word, index) => {
+                    if (word.trim() === '') return;
+
+                    const wordSpan = document.createElement('span');
+                    wordSpan.className = 'split-word';
+
+                    word.split('').forEach(char => {
+                        const charSpan = document.createElement('span');
+                        charSpan.className = 'split-char';
+                        charSpan.textContent = char;
+                        wordSpan.appendChild(charSpan);
+                    });
+
+                    parent.appendChild(wordSpan);
+
+                    // Kelime arası boşluk
+                    if (index < words.length - 1) {
+                        parent.appendChild(document.createTextNode(' '));
+                    }
+                });
+            }
+
+            function triggerAnimation() {
+                const chars = document.querySelectorAll('.split-char');
+                chars.forEach((char, index) => {
+                    setTimeout(() => {
+                        char.classList.add('active');
+                    }, index * 40); // Her harf arası 40ms gecikme
+                });
+            }
+        });
+    </script>
 </body>
 
 </html>
