@@ -59,7 +59,6 @@
     </script>
     <style>
         /* Genel sayfa ölçeklendirmesi */
-<main class="max-w-[1600px] mx-auto">
 
 
         /* Not alanında scrollbar'ı gizle */
@@ -254,27 +253,25 @@
     </nav>
 
     <!-- ANA İÇERİK ALANI -->
-<main>
-  <div class="overflow-x-auto">
-     <!-- tablo -->
-  </div>
-</main>
+    <main class="max-w-[1600px] mx-auto px-4 sm:px-6 pt-8 pb-12">
+        <div class="overflow-x-auto">
+            <!-- Ekran görüntüsü alınacak hedef alan (capture-target) -->
+            <div id="capture-target"
+                class="min-w-[1200px] bg-surface-light dark:bg-surface-dark rounded-2xl shadow-sm border border-border-light dark:border-border-dark overflow-hidden">
 
-        <!-- Ekran görüntüsü alınacak hedef alan (capture-target) -->
-        <div id="capture-target"
-            class="min-w-[1200px] bg-surface-light dark:bg-surface-dark rounded-2xl shadow-sm border border-border-light dark:border-border-dark overflow-hidden">
-
-            <!-- Günlerin Başlıkları -->
-            <div
-                class="grid grid-cols-custom bg-gray-50/80 dark:bg-gray-800/80 border-b border-border-light dark:border-border-dark backdrop-blur-sm">
-                <div class="p-4 flex items-center justify-center border-r border-border-light dark:border-border-dark">
-                    <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Ders Programı</span>
+                <!-- Günlerin Başlıkları -->
+                <div
+                    class="grid grid-cols-custom bg-gray-50/80 dark:bg-gray-800/80 border-b border-border-light dark:border-border-dark backdrop-blur-sm">
+                    <div
+                        class="p-4 flex items-center justify-center border-r border-border-light dark:border-border-dark">
+                        <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Ders Programı</span>
+                    </div>
+                    <div id="daysHeader" class="contents"></div>
                 </div>
-                <div id="daysHeader" class="contents"></div>
-            </div>
 
-            <!-- Ders Programı Gövdesi (Satırlar buraya JS ile eklenir) -->
-            <div id="scheduleBody" class="divide-y divide-border-light dark:divide-border-dark"></div>
+                <!-- Ders Programı Gövdesi (Satırlar buraya JS ile eklenir) -->
+                <div id="scheduleBody" class="divide-y divide-border-light dark:divide-border-dark"></div>
+            </div>
         </div>
 
         <!-- Yeni Satır EkleButonu -->
@@ -801,4 +798,3 @@
 
 
 </html>
-
