@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Haftalık Planlayıcı</title>
+
+    <!-- Tailwind CSS ve Eklentileri -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+
+    <!-- Google Fonts (Inter) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap"
+        rel="stylesheet" />
+    <!-- Material Icons (İkon Seti) -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
+
+    <!-- Harici Kütüphaneler -->
+    <!-- Ekran görüntüsü alma (html2canvas) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- PDF oluşturma (jsPDF) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- Excel işlemleri (SheetJS) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Sürükle-Bırak özelliği (SortableJS) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <!-- Animasyon kütüphanesi (GSAP) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <script>
+        // Sayfa yüklenirken tema tercihini kontrol et (Local Storage veya Sistem Tercihi)
+        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+
+        // Tailwind konfigürasyonu genişletme (Özel renkler ve fontlar)
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#3b82f6", // Ana mavi rengimiz
+                        secondary: "#6366f1",
+                        "background-light": "#f8fafc",
+                        "background-dark": "#0f172a",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1e293b",
+                        "border-light": "#e2e8f0",
+                        "border-dark": "#334155",
+                    },
+                    fontFamily: {
+                        sans: ["Inter", "sans-serif"],
+                    }
+                },
+            },
+        };
+    </script>
+    <style>
+        /* Genel sayfa ölçeklendirmesi */
+        body {
+            zoom: 1.25;
+            -moz-transform: scale(1.25);
+            -moz-transform-origin: top center;
+        }
+
+        /* Not alanında scrollbar'ı gizle */
+        .notes-area {
+            overflow: hidden;
+        }
+
+        /* Tablo grid yapısı: İlk sütun 220px, diğerleri esnek ve min 160px */
+        .grid-cols-custom {
+            grid-template-columns: 220px repeat(7, minmax(160px, 1fr));
+        }
+
+        /* Dışa aktarım sırasında select yerine gösterilecek metin stili */
+        .export-text-div {
+            padding: 0.5rem 0;
+            font-weight: 700;
+            font-size: 1rem;
+            color: #1f2937;
+            background-color: transparent;
+            border: none;
+            display: flex;
+            align-items: center;
+            height: 40px;
+            width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Görev kartlarının stilleri ve hover efektleri */
+        .task-card {
+            position: relative;
+            overflow: hidden;
+            border-radius: 0.75rem;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            border-width: 1px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s;
+        }
+
+        .task-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .ribbon-corner {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 1.5rem;
+            height: 1.5rem;
+            clip-path: polygon(0 0, 100% 0, 100% 100%);
+        }
+
+        .drag-handle {
+            cursor: grab;
+        }
+
+        .drag-handle:active {
+            cursor: grabbing;
+        }
+
+        .dropdown-menu {
+            transform-origin: top right;
+            transition: all 0.2s ease-out;
+        }
+
+        .dropdown-open {
+            opacity: 1;
+            transform: scale(100%);
+            pointer-events: auto;
+        }
+
+        .dropdown-closed {
+            opacity: 0;
+            transform: scale(95%);
+            pointer-events: none;
+        }
+
+        .modal-overlay {
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-content {
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+        }
+    </style>
+</head>
+
+<body
+    class="bg-background-light dark:bg-background-dark font-sans text-gray-800 dark:text-gray-100 min-h-screen transition-colors duration-300">
+
+    <!-- NAVİGASYON ÇUBUĞU -->
+    <nav
+        class="sticky top-0 z-50 bg-surface-light/90 dark:bg-surface-dark/90 backdrop-blur-md border-b border-border-light dark:border-border-dark px-4 py-3 sm:px-6 shadow-sm">
+        <div class="max-w-[1920px] mx-auto flex flex-wrap items-center justify-between gap-4">
+
+            <!-- Logo ve Başlık -->
+            <div class="flex items-center gap-3">
+                <div
+                    class="p-2 bg-gradient-to-br from-primary to-blue-600 text-white rounded-xl shadow-lg shadow-blue-500/30">
+                    <span class="material-icons-round text-2xl">school</span>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-gray-900 dark:text-white leading-none">PLANLAYICI
+                    </h1>
+                    <p id="currentWeekDisplay"
+                        class="text-[11px] text-gray-500 font-semibold uppercase tracking-widest mt-0.5">Yükleniyor...
+                    </p>
+                </div>
+            </div>
+
+            <!-- Sayaçlar (Sınavlar, Görevler) -->
+            <div
+                class="hidden md:flex items-center gap-6 bg-white dark:bg-gray-800 px-6 py-2 rounded-full border border-border-light dark:border-border-dark shadow-sm">
+                <div class="flex items-center gap-2">
+                    <span class="flex h-3 w-3 relative">
+                        <span
+                            class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                    </span>
+                    <span
+                        class="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wide">Sınavlar</span>
+                    <span id="examCount" class="ml-1 text-sm font-black text-gray-900 dark:text-white">0</span>
+                </div>
+                <div class="w-px h-4 bg-gray-200 dark:bg-gray-700"></div>
+                <div class="flex items-center gap-2">
+                    <span class="h-3 w-3 rounded-full bg-emerald-500"></span>
+                    <span
+                        class="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wide">Görevler</span>
+                    <span id="taskCount" class="ml-1 text-sm font-black text-gray-900 dark:text-white">0</span>
+                </div>
+            </div>
+
+            <!-- Kontroller (Hafta Değiştirme, Kaydet, Dışa Aktar, Tema) -->
+            <div class="flex items-center gap-3">
+
+                <!-- Hafta Değiştirme Butonları -->
+                <div
+                    class="flex items-center bg-white dark:bg-gray-800 rounded-lg p-1 border border-border-light dark:border-border-dark shadow-sm">
+                    <button onclick="changeWeek(-1)"
+                        class="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-all text-gray-500 dark:text-gray-400">
+                        <span class="material-icons-round text-lg">chevron_left</span>
+                    </button>
+                    <div
+                        class="px-4 border-l border-r border-gray-100 dark:border-gray-700 h-6 flex items-center justify-center">
+                        <span
+                            class="text-[11px] font-bold uppercase text-gray-500 dark:text-gray-400 select-none tracking-wider">HAFTA</span>
+                    </div>
+                    <button onclick="changeWeek(1)"
+                        class="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-all text-gray-500 dark:text-gray-400">
+                        <span class="material-icons-round text-lg">chevron_right</span>
+                    </button>
+                </div>
+
+                <!-- Kaydet Butonu -->
+                <button onclick="saveCurrentWeek()"
+                    class="group flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-300 rounded-lg font-semibold text-sm hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-all border border-blue-100 dark:border-blue-900/50">
+                    <span class="material-icons-round text-lg group-hover:scale-110 transition-transform">save</span>
+                    <span class="hidden sm:inline">Kaydet</span>
+                </button>
+
+                <!-- Dışa Aktar Menüsü -->
+                <div class="relative">
+                    <button onclick="toggleExportMenu()"
+                        class="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-all border border-border-light dark:border-border-dark shadow-sm">
+                        <span class="material-icons-round text-lg">ios_share</span>
+                    </button>
+                    <div id="exportMenu"
+                        class="dropdown-closed absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 z-50 p-1">
+                        <button onclick="downloadAs('pdf')"
+                            class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg flex items-center gap-2"><span
+                                class="material-icons-round text-red-500 text-sm">picture_as_pdf</span> PDF</button>
+                        <button onclick="downloadAs('png')"
+                            class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg flex items-center gap-2"><span
+                                class="material-icons-round text-pink-500 text-sm">image</span> PNG</button>
+                        <button onclick="exportToExcel()"
+                            class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg flex items-center gap-2"><span
+                                class="material-icons-round text-green-600 text-sm">table_view</span> Excel</button>
+                    </div>
+                </div>
+
+                <!-- Tema Değiştirme -->
+                <button onclick="toggleTheme()"
+                    class="p-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-border-light dark:border-border-dark shadow-sm">
+                    <span class="material-icons-round dark:hidden text-lg">dark_mode</span>
+                    <span class="material-icons-round hidden dark:block text-lg text-yellow-400">light_mode</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ANA İÇERİK ALANI -->
+    <main class="max-w-[1920px] mx-auto px-4 sm:px-6 pt-8 pb-12 overflow-x-auto">
+        <!-- Ekran görüntüsü alınacak hedef alan (capture-target) -->
+        <div id="capture-target"
+            class="min-w-[1200px] bg-surface-light dark:bg-surface-dark rounded-2xl shadow-sm border border-border-light dark:border-border-dark overflow-hidden">
+
+            <!-- Günlerin Başlıkları -->
+            <div
+                class="grid grid-cols-custom bg-gray-50/80 dark:bg-gray-800/80 border-b border-border-light dark:border-border-dark backdrop-blur-sm">
+                <div class="p-4 flex items-center justify-center border-r border-border-light dark:border-border-dark">
+                    <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Ders Programı</span>
+                </div>
+                <div id="daysHeader" class="contents"></div>
+            </div>
+
+            <!-- Ders Programı Gövdesi (Satırlar buraya JS ile eklenir) -->
+            <div id="scheduleBody" class="divide-y divide-border-light dark:divide-border-dark"></div>
+        </div>
+
+        <!-- Yeni Satır EkleButonu -->
+        <div class="mt-8 flex justify-center ignore-on-export">
+            <button onclick="addSubjectRow()"
+                class="flex items-center gap-2 px-6 py-3 bg-white dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-600 rounded-full text-sm font-medium text-gray-500 dark:text-gray-400 hover:border-primary hover:text-primary transition-all shadow-sm hover:shadow-md hover:-translate-y-1">
+                <span class="material-icons-round">add</span>
+                Yeni Ders Satırı Ekle
+            </button>
+        </div>
+    </main>
+
+    <!-- GÖREV EKLEME MODALI -->
+    <div id="taskModal" class="fixed inset-0 z-[60] hidden">
+        <div class="modal-overlay absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeTaskModal()"></div>
+        <div
+            class="modal-content absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <span class="p-1 bg-primary/10 rounded-lg text-primary material-icons-round">notification_add</span>
+                    Hatırlatıcı Ekle
+                </h3>
+                <button onclick="closeTaskModal()" class="text-gray-400 hover:text-red-500"><span
+                        class="material-icons-round">close</span></button>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Başlık / Konu</label>
+                    <input type="text" id="modalTaskInput"
+                        class="w-full rounded-xl border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-primary focus:border-primary text-sm"
+                        placeholder="Örn: Fonksiyonlar Quiz" autofocus>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Saat</label>
+                        <input type="time" id="modalTaskTime"
+                            class="w-full rounded-xl border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-primary focus:border-primary text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Tür</label>
+                        <select id="modalTaskType"
+                            class="w-full rounded-xl border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-primary focus:border-primary text-sm">
+                            <option value="exam">Sınav / Quiz</option>
+                            <option value="project">Proje</option>
+                            <option value="homework">Ödev</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button onclick="confirmAddTask()"
+                    class="w-full py-3 bg-primary hover:bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-500/30 transition-all hover:scale-[1.02]">Ekle</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Global Değişkenler ---
+        const days = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
+        const lessons = ["Seçiniz...", "Türkçe", "Matematik", "Fizik", "Kimya", "Biyoloji", "Tarih", "Coğrafya", "Felsefe", "İngilizce", "Geometri"];
+        let currentWeekStart = new Date();
+        let currentTaskContext = { btn: null, dayIndex: null };
+
+        // --- Sayfa Yüklenme Olayı ---
+        window.onload = function () {
+            setInitialDate(); // Başlangıç tarihini ayarla
+            renderWeek();     // Haftayı ve ders programını çiz
+            initSortable();   // Sürükle-bırak özelliğini aktif et
+
+            // Dışa aktar menüsünü dışarı tıklandığında kapat
+            document.addEventListener('click', function (event) {
+                const menu = document.getElementById('exportMenu');
+                const btn = event.target.closest('button[onclick="toggleExportMenu()"]');
+                if (!btn && !menu.contains(event.target)) {
+                    menu.classList.remove('dropdown-open');
+                    menu.classList.add('dropdown-closed');
+                }
+            });
+        };
+
+        // --- Sürükle & Bırak Özelliği (SortableJS) ---
+        function initSortable() {
+            Sortable.create(document.getElementById('scheduleBody'), {
+                handle: '.drag-handle', // Sürükleme tutamacı
+                animation: 150,
+                onEnd: function () { renumberRows(); saveCurrentWeek(false); } // Bırakıldığında sıralamayı güncelle ve kaydet
+            });
+        }
+
+        function toggleTheme() {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('color-theme', 'light');
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('color-theme', 'dark');
+            }
+        }
+
+        function toggleExportMenu() {
+            const menu = document.getElementById('exportMenu');
+            menu.classList.toggle('dropdown-closed');
+            menu.classList.toggle('dropdown-open');
+        }
+
+        // --- Hafta Navigasyonu ve Tarih İşlemleri ---
+
+        // Başlangıç tarihini o haftanın Pazartesi günü olarak ayarlar
+        function setInitialDate() {
+            const today = new Date();
+            const day = today.getDay(); // 0: Pazar, 1: Pazartesi...
+            const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+            currentWeekStart = new Date(today.setDate(diff));
+            currentWeekStart.setHours(0, 0, 0, 0);
+        }
+
+        // Önceki/Sonraki haftaya geçiş (GSAP Animasyonu ile)
+        function changeWeek(offset) {
+            saveCurrentWeek(false); // Mevcut haftayı kaydet
+
+            // Mevcut tabloyu sola veya sağa kaydırarak yok et
+            gsap.to("#scheduleBody, #daysHeader", {
+                x: -20 * offset,
+                opacity: 0.5,
+                duration: 0.2,
+                onComplete: () => {
+                    // Tarihi güncelle ve yeni haftayı çiz
+                    currentWeekStart.setDate(currentWeekStart.getDate() + (offset * 7));
+                    renderWeek();
+
+                    // Yeni tabloyu animasyonla getir
+                    gsap.fromTo("#scheduleBody, #daysHeader",
+                        { x: 20 * offset, opacity: 0.5 },
+                        { x: 0, opacity: 1, duration: 0.3, ease: "power2.out" }
+                    );
+                }
+            });
+        }
+
+        // --- Ana Render Fonksiyonu ---
+        // Takvimi, başlıkları ve kayıtlı verileri ekrana basar
+        function renderWeek() {
+            const headerContainer = document.getElementById('daysHeader');
+            const scheduleBody = document.getElementById('scheduleBody');
+
+            let tempDate = new Date(currentWeekStart);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const endDate = new Date(currentWeekStart);
+            endDate.setDate(endDate.getDate() + 6);
+            const dateOptions = { day: 'numeric', month: 'long', year: 'numeric' };
+            document.getElementById('currentWeekDisplay').innerText =
+                `${currentWeekStart.toLocaleDateString('tr-TR', dateOptions)} - ${endDate.toLocaleDateString('tr-TR', dateOptions)}`;
+
+            let headerHtml = '';
+            days.forEach((day, index) => {
+                const isWeekend = index >= 5;
+                const isToday = tempDate.getTime() === today.getTime();
+
+                let bgClass = isWeekend ? 'bg-gray-50/50 dark:bg-gray-800/30' : '';
+                let textClass = isWeekend ? 'text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white';
+                let pillClass = 'bg-white border-gray-200 text-gray-400 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-400';
+
+                if (isToday) {
+                    bgClass = 'bg-blue-50/50 dark:bg-blue-900/10';
+                    textClass = 'text-primary dark:text-blue-400';
+                    pillClass = 'bg-primary text-white border-primary shadow-lg shadow-blue-500/30';
+                }
+
+                const displayDate = tempDate.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' });
+
+                headerHtml += `
+            <div class="p-4 text-center border-r border-border-light dark:border-border-dark last:border-r-0 ${bgClass} flex flex-col items-center justify-center gap-2">
+                <span class="text-sm font-bold ${textClass}">${day}</span>
+                <span class="text-[10px] font-mono px-3 py-1 rounded-full border ${pillClass}">${displayDate}</span>
+            </div>`;
+                tempDate.setDate(tempDate.getDate() + 1);
+            });
+            headerContainer.innerHTML = headerHtml;
+
+            // LocalStorage'dan verileri çek
+            const storageKey = `schedule_${currentWeekStart.toISOString().slice(0, 10)}`;
+            const storedData = localStorage.getItem(storageKey);
+
+            scheduleBody.innerHTML = '';
+            if (storedData) {
+                // Kayıtlı veri varsa onu yükle
+                const data = JSON.parse(storedData);
+                data.rows.forEach(row => {
+                    const tasks = row.tasks || [[], [], [], [], [], [], []];
+                    addSubjectRow(row.subject, row.notes, row.tag, tasks);
+                });
+            } else {
+                // Kayıtlı veri yoksa varsayılan boş tablo oluştur
+                for (let i = 0; i < 7; i++) addSubjectRow(null, [], null);
+                // Örnek dersleri otomatik seç
+                const selects = document.querySelectorAll('.row-subject');
+                selects.forEach((s, i) => { if (i + 1 < lessons.length) s.selectedIndex = i + 1; });
+            }
+            updateDashboard(); // İstatistikleri güncelle
+        }
+
+        // --- Yeni Ders Satırı Ekleme ---
+        function addSubjectRow(savedSubject = null, savedNotes = [], savedTag = null, savedTasks = null) {
+            const container = document.getElementById('scheduleBody');
+            const rowIndex = container.children.length;
+            if (!savedTasks) savedTasks = [[], [], [], [], [], [], []];
+
+            const div = document.createElement('div');
+            div.className = "schedule-row grid grid-cols-custom bg-white dark:bg-surface-dark group";
+
+            let optionsHtml = lessons.map(l => `<option ${savedSubject === l ? 'selected' : ''}>${l}</option>`).join('');
+
+            let tagHtml = savedTag ?
+                `<span onclick="toggleTag(this)" class="cursor-pointer inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">${savedTag}</span>` :
+                `<button onclick="addTag(this)" class="text-[10px] font-medium text-gray-400 hover:text-primary transition-colors">+ ETİKET</button>`;
+
+            let rowHtml = `
+            <div class="p-3 border-r border-border-light dark:border-border-dark bg-white dark:bg-surface-dark z-10 sticky left-0 flex flex-col justify-center h-full min-h-[160px]">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="material-icons-round text-gray-300 hover:text-gray-600 dark:hover:text-gray-200 cursor-grab drag-handle text-lg">drag_indicator</span>
+                    <label class="row-label block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider flex-grow">Ders ${rowIndex + 1}</label>
+                    <button onclick="deleteRow(this)" class="delete-btn text-gray-300 hover:text-red-500 transition-colors"><span class="material-icons-round text-lg">delete</span></button>
+                </div>
+                <select class="row-subject w-full border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg text-sm font-semibold focus:ring-primary focus:border-primary shadow-sm h-9">${optionsHtml}</select>
+                <div class="mt-2 tag-container h-5">${tagHtml}</div>
+            </div>
+            `;
+
+            for (let i = 0; i < 7; i++) {
+                const isWeekend = i >= 5;
+                const bgClass = isWeekend ? 'bg-gray-50/50 dark:bg-gray-800/20' : '';
+                const noteVal = savedNotes[i] || '';
+                const dayTasks = savedTasks[i] || [];
+
+                let tasksHtml = '';
+                dayTasks.forEach(task => {
+                    let cardStyle = 'bg-blue-50 border-blue-100 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-200';
+                    let ribbonColor = 'bg-blue-500';
+                    let titleLabel = 'ÖDEV';
+                    let titleColor = 'text-blue-700';
+
+                    if (task.type === 'exam') {
+                        cardStyle = 'bg-red-50 border-red-100 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-200';
+                        ribbonColor = 'bg-red-500';
+                        titleLabel = 'SINAV';
+                        titleColor = 'text-red-700';
+                    } else if (task.type === 'project') {
+                        cardStyle = 'bg-emerald-50 border-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-200';
+                        ribbonColor = 'bg-emerald-500';
+                        titleLabel = 'PROJE';
+                        titleColor = 'text-emerald-700';
+                    }
+
+                    tasksHtml += `
+            <div class="task-card ${cardStyle} relative group/card" onclick="removeTask(this)">
+                <div class="ribbon-corner ${ribbonColor}"></div>
+                <div class="text-[10px] font-bold ${titleColor} uppercase mb-0.5">${titleLabel}</div>
+                <div class="text-sm font-bold text-slate-800 dark:text-white leading-tight mb-2 pr-2">${task.text}</div>
+                <div class="flex items-center gap-1 text-xs font-medium opacity-80">
+                    <span class="material-icons-round text-sm">schedule</span> ${task.time || '--:--'}
+                </div>
+            </div>`;
+                });
+
+                // GÜNCELLEME: Flex-col ile kutuyu genişletme
+                rowHtml += `
+            <div class="relative border-r border-border-light dark:border-border-dark h-full min-h-[160px] ${bgClass} group/cell hover:bg-blue-50/10 dark:hover:bg-blue-900/10 transition-colors p-2 flex flex-col">
+
+                <div class="task-container flex flex-col gap-1 w-full mb-2 flex-shrink-0">
+                    ${tasksHtml}
+                </div>
+
+                <textarea class="row-note notes-area w-full flex-grow resize-none bg-transparent border-0 focus:ring-0 text-sm text-gray-600 dark:text-gray-300 placeholder-gray-300 dark:placeholder-gray-700 p-1 leading-tight min-h-[60px]" oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'" placeholder="Not...">${noteVal}</textarea>
+
+                <button onclick="openTaskModal(this, ${i})" class="add-task-btn absolute bottom-1 right-1 w-7 h-7 bg-white dark:bg-gray-700 text-gray-400 hover:text-primary rounded-full shadow-sm border border-gray-100 dark:border-gray-600 flex items-center justify-center opacity-0 group-hover/cell:opacity-100 transition-all z-20 hover:scale-110">
+                    <span class="material-icons-round text-base">add</span>
+                </button>
+            </div>
+            `;
+            }
+            div.innerHTML = rowHtml;
+            container.appendChild(div);
+
+            // Textarea'ların yüksekliğini ayarla
+            div.querySelectorAll('textarea').forEach(ta => {
+                ta.style.height = '';
+                ta.style.height = ta.scrollHeight + 'px';
+            });
+        }
+
+        // --- Modal (Görev Ekleme/Düzenleme) İşlemleri ---
+        function openTaskModal(btn, dayIndex) {
+            currentTaskContext = { btn: btn, dayIndex: dayIndex };
+            const modal = document.getElementById('taskModal');
+            const modalContent = modal.querySelector('.modal-content');
+
+            // Formu sıfırla
+            document.getElementById('modalTaskInput').value = '';
+            document.getElementById('modalTaskTime').value = '09:00';
+            document.getElementById('modalTaskType').value = 'homework';
+
+            // Modalı göster ve animasyon oynat
+            modal.classList.remove('hidden');
+            gsap.fromTo(modalContent, { scale: 0.9, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.3, ease: "back.out(1.7)" });
+        }
+
+        function closeTaskModal() { document.getElementById('taskModal').classList.add('hidden'); }
+
+        // Görev Ekleme Onayı
+        function confirmAddTask() {
+            const text = document.getElementById('modalTaskInput').value;
+            const time = document.getElementById('modalTaskTime').value;
+            const type = document.getElementById('modalTaskType').value;
+
+            if (!text) return;
+
+            const cell = currentTaskContext.btn.closest('.relative');
+            const taskContainer = cell.querySelector('.task-container');
+
+            let cardStyle = 'bg-blue-50 border-blue-100 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-200';
+            let ribbonColor = 'bg-blue-500';
+            let titleLabel = 'ÖDEV';
+            let titleColor = 'text-blue-700';
+
+            if (type === 'exam') {
+                cardStyle = 'bg-red-50 border-red-100 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-200';
+                ribbonColor = 'bg-red-500';
+                titleLabel = 'SINAV';
+                titleColor = 'text-red-700';
+            } else if (type === 'project') {
+                cardStyle = 'bg-emerald-50 border-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-200';
+                ribbonColor = 'bg-emerald-500';
+                titleLabel = 'PROJE';
+                titleColor = 'text-emerald-700';
+            }
+
+            const cardHtml = `
+            <div class="task-card ${cardStyle} relative group/card" onclick="removeTask(this)">
+                <div class="ribbon-corner ${ribbonColor}"></div>
+                <div class="text-[10px] font-bold ${titleColor} uppercase mb-0.5">${titleLabel}</div>
+                <div class="text-sm font-bold text-slate-800 dark:text-white leading-tight mb-2 pr-2">${text}</div>
+                <div class="flex items-center gap-1 text-xs font-medium opacity-80">
+                    <span class="material-icons-round text-sm">schedule</span> ${time}
+                </div>
+            </div>`;
+
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = cardHtml;
+            taskContainer.appendChild(tempDiv.firstElementChild);
+
+            closeTaskModal();
+            saveCurrentWeek(false);
+        }
+
+        function removeTask(el) { if (confirm("Bu görevi silmek istiyor musun?")) { el.remove(); saveCurrentWeek(false); } }
+
+        function updateDashboard() {
+            const allCards = document.querySelectorAll('.task-card');
+            let examCount = 0;
+            let taskCount = 0;
+
+            allCards.forEach(card => {
+                if (card.classList.contains('text-red-700') || card.classList.contains('dark:text-red-200')) {
+                    examCount++;
+                } else {
+                    taskCount++;
+                }
+            });
+
+            document.getElementById('examCount').innerText = examCount;
+            document.getElementById('taskCount').innerText = taskCount;
+        }
+
+        function deleteRow(btn) {
+            const row = btn.closest('.schedule-row');
+            gsap.to(row, { height: 0, opacity: 0, duration: 0.3, onComplete: () => { row.remove(); renumberRows(); saveCurrentWeek(false); } });
+        }
+
+        function renumberRows() { document.querySelectorAll('.row-label').forEach((l, i) => l.innerText = `Ders ${i + 1}`); }
+
+        function addTag(btn) {
+            btn.parentElement.innerHTML = `<span onclick="toggleTag(this)" class="cursor-pointer inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">SINAV HAFTASI</span>`;
+            saveCurrentWeek(false);
+        }
+
+        function toggleTag(span) {
+            if (span.innerText === "SINAV HAFTASI") {
+                span.className = "cursor-pointer inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300";
+                span.innerText = "PROJE HAFTASI";
+            } else if (span.innerText === "PROJE HAFTASI") {
+                span.parentElement.innerHTML = `<button onclick="addTag(this)" class="text-[10px] font-medium text-gray-400 hover:text-primary transition-colors">+ ETİKET</button>`;
+            }
+            saveCurrentWeek(false);
+        }
+
+        // --- Veri Kaydetme ---
+        // Tüm tabloyu tarar ve JSON formatında LocalStorage'a kaydeder
+        function saveCurrentWeek(showAnimation = true) {
+            const data = { weekStart: currentWeekStart.toISOString().slice(0, 10), rows: [] };
+            const rowDivs = document.getElementById('scheduleBody').children;
+
+            for (let row of rowDivs) {
+                const subject = row.querySelector('.row-subject').value;
+                const notes = Array.from(row.querySelectorAll('.row-note')).map(ta => ta.value);
+                const tasks = [];
+
+                const cells = row.querySelectorAll('.relative');
+
+                cells.forEach(cell => {
+                    const dayTasks = [];
+                    const cards = cell.querySelectorAll('.task-card');
+
+                    cards.forEach(card => {
+                        const typeLabel = card.querySelector('div.uppercase').innerText;
+                        const text = card.querySelector('div.text-slate-800').innerText;
+                        const timeText = card.querySelector('.flex').innerText.replace('schedule', '').trim();
+
+                        let type = 'homework';
+                        if (typeLabel === 'SINAV') type = 'exam';
+                        if (typeLabel === 'PROJE') type = 'project';
+
+                        dayTasks.push({ text: text, type: type, time: timeText });
+                    });
+                    tasks.push(dayTasks);
+                });
+
+                const tagSpan = row.querySelector('.tag-container span');
+                const tag = tagSpan ? tagSpan.innerText : null;
+                data.rows.push({ subject, notes, tag, tasks });
+            }
+            localStorage.setItem(`schedule_${data.weekStart}`, JSON.stringify(data));
+            updateDashboard();
+            if (showAnimation) {
+                const btn = document.querySelector('button[onclick="saveCurrentWeek()"]');
+                gsap.fromTo(btn, { scale: 1 }, { scale: 1.1, duration: 0.1, yoyo: true, repeat: 1 });
+            }
+        }
+
+        // --- Dışa Aktarma (PDF/PNG) ---
+        async function downloadAs(type) {
+            toggleExportMenu();
+            const element = document.getElementById('capture-target');
+            const wasDark = document.documentElement.classList.contains('dark');
+
+            if (wasDark) document.documentElement.classList.remove('dark');
+            document.body.style.zoom = "1";
+
+            const selects = document.querySelectorAll('.row-subject');
+            const replacements = [];
+            selects.forEach(select => {
+                const text = select.options[select.selectedIndex].text;
+                const div = document.createElement('div');
+                div.className = 'export-text-div'; div.innerText = text;
+                select.style.display = 'none';
+                select.parentElement.insertBefore(div, select.nextSibling);
+                replacements.push({ select, div });
+            });
+
+            const elementsToHide = [...document.querySelectorAll('.delete-btn'), ...document.querySelectorAll('.drag-handle'), ...document.querySelectorAll('.add-task-btn'), ...document.querySelectorAll('button[onclick^="addTag"]')];
+            elementsToHide.forEach(el => el.style.display = 'none');
+
+            try {
+                await new Promise(r => setTimeout(r, 100));
+                const canvas = await html2canvas(element, { scale: 2, backgroundColor: "#ffffff", useCORS: true });
+
+                if (type === 'png') {
+                    const link = document.createElement('a');
+                    link.download = `ders-programi-${currentWeekStart.toISOString().slice(0, 10)}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                } else if (type === 'pdf') {
+                    const { jsPDF } = window.jspdf;
+                    const pdf = new jsPDF('l', 'mm', 'a4');
+                    const imgData = canvas.toDataURL('image/png');
+                    const imgProps = pdf.getImageProperties(imgData);
+                    const pdfWidth = pdf.internal.pageSize.getWidth();
+                    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                    pdf.addImage(imgData, 'PNG', 0, 10, pdfWidth, pdfHeight);
+                    pdf.save(`ders-programi-${currentWeekStart.toISOString().slice(0, 10)}.pdf`);
+                }
+            } catch (err) { alert("Hata oluştu."); }
+            finally {
+                replacements.forEach(item => { item.div.remove(); item.select.style.display = ''; });
+                elementsToHide.forEach(el => el.style.display = '');
+                if (wasDark) document.documentElement.classList.add('dark');
+                document.body.style.zoom = "1.25";
+            }
+        }
+
+        // --- Excel'e Aktarma ---
+        function exportToExcel() {
+            toggleExportMenu();
+            const data = [];
+            const headerRow = ['Ders / Gün', 'Etiket', ...days];
+            data.push(headerRow);
+            const rowDivs = document.getElementById('scheduleBody').children;
+            for (let row of rowDivs) {
+                const subject = row.querySelector('.row-subject').value;
+                const tag = row.querySelector('.tag-container span')?.innerText || '';
+                const notes = Array.from(row.querySelectorAll('.row-note')).map(ta => ta.value);
+                const mergedContent = notes.map((note, index) => {
+                    const cell = row.querySelectorAll('.relative')[index];
+                    const cards = cell.querySelectorAll('.task-card');
+                    const tasksText = Array.from(cards).map(c => {
+                        const title = c.querySelector('div.text-slate-800').innerText;
+                        const time = c.querySelector('.flex').innerText.replace('schedule', '').trim();
+                        return `[${title} @ ${time}]`;
+                    }).join(' ');
+                    return (tasksText + ' ' + note).trim();
+                });
+                data.push([subject, tag, ...mergedContent]);
+            }
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            ws['!cols'] = [{ wch: 20 }, { wch: 15 }, { wch: 30 }, { wch: 30 }, { wch: 30 }, { wch: 30 }, { wch: 30 }, { wch: 20 }, { wch: 20 }];
+            XLSX.utils.book_append_sheet(wb, ws, "Ders Programı");
+            XLSX.writeFile(wb, `ders-programi-${currentWeekStart.toISOString().slice(0, 10)}.xlsx`);
+        }
+    </script>
+</body>
+
+</html>
