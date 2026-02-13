@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>Akademik Koç V5.1</title>
+    <title>Akademik Koç V5.2</title>
 
     <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
 
@@ -18,6 +18,22 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 
     <script>
+        // --- GÜVENLİ TEMA VE AYARLAR ---
+        // LocalStorage hatasını önlemek için try-catch bloğu
+        function getSafeTheme() {
+            try { return localStorage.getItem('theme'); } catch (e) { return null; }
+        }
+        function setSafeTheme(val) {
+            try { localStorage.setItem('theme', val); } catch (e) { console.log('Theme save error'); }
+        }
+
+        // Sayfa yüklenmeden temayı uygula (Flicker önleme)
+        if (getSafeTheme() === 'dark' || (!getSafeTheme() && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+
         tailwind.config = {
             darkMode: "class",
             theme: {
@@ -34,9 +50,6 @@
                 },
             },
         };
-        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-        }
     </script>
 
     <style>
@@ -97,8 +110,8 @@
                 </div>
                 <div>
                     <h1 class="text-lg font-bold tracking-tight leading-none">AKADEMİK KOÇ</h1>
-                    <span class="text-[10px] uppercase tracking-widest text-gray-500 dark:text-gray-400 font-bold">V5.1
-                        Sistemi</span>
+                    <span class="text-[10px] uppercase tracking-widest text-gray-500 dark:text-gray-400 font-bold">V5.2
+                        Final</span>
                 </div>
                 <div class="ml-8 flex bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
                     <button onclick="switchView('planner')" id="btn-view-planner"
@@ -115,7 +128,7 @@
                     <span class="material-icons-round text-lg">save</span> <span class="hidden sm:inline">Kaydet</span>
                 </button>
                 <button onclick="toggleTheme()"
-                    class="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition">
+                    class="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition border border-transparent dark:border-gray-700">
                     <span class="material-icons-round dark:hidden">dark_mode</span>
                     <span class="material-icons-round hidden dark:block text-yellow-400">light_mode</span>
                 </button>
@@ -275,7 +288,13 @@
             { id: 'fiz', name: 'Fizik', topics: ['Vektörler', 'Kuvvet ve Hareket'] },
             { id: 'kim', name: 'Kimya', topics: ['Atom Modelleri', 'Periyodik Sistem'] }
         ];
-        let curriculum = JSON.parse(localStorage.getItem('curriculum')) || defaultSubjects;
+
+        // LocalStorage'dan güvenli okuma
+        let curriculum = [];
+        try {
+            curriculum = JSON.parse(localStorage.getItem('curriculum')) || defaultSubjects;
+        } catch (e) { curriculum = defaultSubjects; }
+
         let weekOffset = 0;
         let activeModalContext = null;
         const days = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
@@ -283,10 +302,21 @@
         window.onload = () => {
             renderCurriculum();
             renderPlanner();
-            if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark');
         };
 
-        // --- 2. GÖRÜNÜM GEÇİŞLERİ ---
+        // --- 2. TEMA DEĞİŞTİRME FONKSİYONU ---
+        function toggleTheme() {
+            const html = document.documentElement;
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                setSafeTheme('light');
+            } else {
+                html.classList.add('dark');
+                setSafeTheme('dark');
+            }
+        }
+
+        // --- 3. GÖRÜNÜM GEÇİŞLERİ ---
         function switchView(viewName) {
             const planner = document.getElementById('view-planner');
             const curr = document.getElementById('view-curriculum');
@@ -304,7 +334,7 @@
             }
         }
 
-        // --- 3. MÜFREDAT YÖNETİMİ ---
+        // --- 4. MÜFREDAT YÖNETİMİ ---
         function renderCurriculum() {
             const list = document.getElementById('subjectsList');
             list.innerHTML = '';
@@ -338,9 +368,9 @@
         function deleteSubject(i) { if (confirm("Ders silinsin mi?")) { curriculum.splice(i, 1); saveCurriculum(); renderCurriculum(); } }
         function addTopic(i) { const el = document.getElementById(`topic-input-${i}`); if (el.value.trim()) { curriculum[i].topics.push(el.value.trim()); el.value = ''; saveCurriculum(); renderCurriculum(); } }
         function deleteTopic(si, ti) { curriculum[si].topics.splice(ti, 1); saveCurriculum(); renderCurriculum(); }
-        function saveCurriculum() { localStorage.setItem('curriculum', JSON.stringify(curriculum)); }
+        function saveCurriculum() { try { localStorage.setItem('curriculum', JSON.stringify(curriculum)); } catch (e) { } }
 
-        // --- 4. PLANLAYICI (RENDER ve BİRLEŞTİRME MANTIĞI BURADA) ---
+        // --- 5. PLANLAYICI (RENDER ve BİRLEŞTİRME MANTIĞI) ---
         function getWeekKey() {
             const d = new Date(); const diff = d.getDate() - d.getDay() + (d.getDay() === 0 ? -6 : 1) + (weekOffset * 7);
             return new Date(d.setDate(diff)).toISOString().slice(0, 10);
@@ -349,7 +379,8 @@
 
         function renderPlanner() {
             const weekKey = getWeekKey();
-            const savedData = JSON.parse(localStorage.getItem(`schedule_${weekKey}`)) || { rows: [] };
+            let savedData = { rows: [] };
+            try { savedData = JSON.parse(localStorage.getItem(`schedule_${weekKey}`)) || { rows: [] }; } catch (e) { }
 
             // Tarih Başlıkları
             const headerDiv = document.getElementById('daysHeader');
@@ -390,7 +421,7 @@
                 let displayTasks = [];
                 let topicMap = {};
 
-                // 1. Adım: Taskları grupla
+                // 1. Grupla
                 rawTasks.forEach(task => {
                     if (task.category === 'topic') {
                         if (!topicMap[task.topic]) topicMap[task.topic] = {};
@@ -400,7 +431,7 @@
                     }
                 });
 
-                // 2. Adım: Gruplanmışları birleştir veya tekil ekle
+                // 2. Birleştir
                 Object.keys(topicMap).forEach(topic => {
                     const group = topicMap[topic];
                     if (group.review && group.test) {
@@ -412,7 +443,7 @@
                     }
                 });
 
-                // 3. Adım: HTML Oluştur
+                // 3. HTML
                 let cellContent = `<div class="tasks-container flex flex-col gap-2 min-h-[100px] p-2">`;
                 displayTasks.forEach(item => {
                     if (item.mode === 'combined') {
@@ -510,8 +541,6 @@
             else { document.getElementById('input-review').classList.add('hidden'); document.getElementById('input-test').classList.remove('hidden'); }
         }
         function confirmAddTask() {
-            // UI'ya hemen eklemiyoruz, SaveData çağırıp renderPlanner'ı tetiklemek daha güvenli bir birleştirme sağlar
-            // Ama UX hızı için DOM'a ekleyip sonra save yapacağız.
             const isTopic = !document.getElementById('modal-content-topic').classList.contains('hidden');
             let taskObj = null;
             if (isTopic) {
@@ -525,10 +554,8 @@
                 let lbl = "ÖDEV"; if (type === 'exam') lbl = "SINAV"; if (type === 'project') lbl = "PROJE";
                 taskObj = { category: 'generic', text: text, type: type, typeLabel: lbl };
             }
-            // DOM'a geçici ekle
             activeModalContext.container.innerHTML += createTaskCardHTML(taskObj);
             closeTaskModal();
-            // Veriyi kaydet ve TEKRAR ÇİZ (Bu adım birleştirmeyi tetikler)
             saveData(true);
             document.getElementById('genericTaskInput').value = ''; document.getElementById('targetDuration').value = ''; document.getElementById('targetQuestions').value = '';
         }
@@ -537,54 +564,56 @@
 
         // --- KAYIT (SAVE) ve PARSE ---
         function saveData(shouldRerender = false) {
-            const rows = [];
-            const rowDivs = document.getElementById('scheduleBody').children;
-            for (let rowDiv of rowDivs) {
-                const subject = rowDiv.querySelector('.row-subject-select').value;
-                const tasks = [];
-                const dayContainers = rowDiv.querySelectorAll('.tasks-container');
-                dayContainers.forEach(container => {
-                    const dayTaskList = [];
-                    for (let card of container.children) {
-                        if (card.classList.contains('combined-card')) {
-                            // Birleşik Kartı İkiye Bölüp Kaydet
-                            const rData = card.querySelector('.data-review').dataset;
-                            const tData = card.querySelector('.data-test').dataset;
-                            dayTaskList.push({ category: 'topic', topic: rData.topic, studyType: 'review', target: rData.target });
-                            dayTaskList.push({ category: 'topic', topic: tData.topic, studyType: 'test', target: tData.target });
-                        } else if (card.classList.contains('single-card')) {
-                            // Tekil Kart
-                            const meta = card.querySelector('.data-meta').dataset;
-                            if (meta.cat === 'topic') {
-                                dayTaskList.push({ category: 'topic', topic: meta.topic, studyType: meta.type, target: meta.target });
-                            } else {
-                                dayTaskList.push({ category: 'generic', text: meta.text, type: meta.type, typeLabel: meta.label });
+            try {
+                const rows = [];
+                const rowDivs = document.getElementById('scheduleBody').children;
+                for (let rowDiv of rowDivs) {
+                    const subject = rowDiv.querySelector('.row-subject-select').value;
+                    const tasks = [];
+                    const dayContainers = rowDiv.querySelectorAll('.tasks-container');
+                    dayContainers.forEach(container => {
+                        const dayTaskList = [];
+                        for (let card of container.children) {
+                            if (card.classList.contains('combined-card')) {
+                                const rData = card.querySelector('.data-review').dataset;
+                                const tData = card.querySelector('.data-test').dataset;
+                                dayTaskList.push({ category: 'topic', topic: rData.topic, studyType: 'review', target: rData.target });
+                                dayTaskList.push({ category: 'topic', topic: tData.topic, studyType: 'test', target: tData.target });
+                            } else if (card.classList.contains('single-card')) {
+                                const meta = card.querySelector('.data-meta').dataset;
+                                if (meta.cat === 'topic') {
+                                    dayTaskList.push({ category: 'topic', topic: meta.topic, studyType: meta.type, target: meta.target });
+                                } else {
+                                    dayTaskList.push({ category: 'generic', text: meta.text, type: meta.type, typeLabel: meta.label });
+                                }
                             }
                         }
-                    }
-                    tasks.push(dayTaskList);
-                });
-                rows.push({ subject, tasks });
-            }
-            const weekKey = getWeekKey();
-            localStorage.setItem(`schedule_${weekKey}`, JSON.stringify({ rows }));
+                        tasks.push(dayTaskList);
+                    });
+                    rows.push({ subject, tasks });
+                }
+                const weekKey = getWeekKey();
+                localStorage.setItem(`schedule_${weekKey}`, JSON.stringify({ rows }));
 
-            const btn = document.querySelector('button[onclick="saveData()"]');
-            btn.classList.add('scale-110'); setTimeout(() => btn.classList.remove('scale-110'), 200);
+                const btn = document.querySelector('button[onclick="saveData()"]');
+                if (btn) { btn.classList.add('scale-110'); setTimeout(() => btn.classList.remove('scale-110'), 200); }
 
-            if (shouldRerender) renderPlanner();
+                if (shouldRerender) renderPlanner();
+            } catch (e) { console.log('Save error'); }
         }
 
         async function exportToPDF() {
-            const element = document.getElementById('planner-container');
-            const canvas = await html2canvas(element, { scale: 2 });
-            const imgData = canvas.toDataURL('image/png');
-            const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF('l', 'mm', 'a4');
-            const width = pdf.internal.pageSize.getWidth();
-            const height = (canvas.height * width) / canvas.width;
-            pdf.addImage(imgData, 'PNG', 0, 10, width, height);
-            pdf.save('haftalik-program.pdf');
+            try {
+                const element = document.getElementById('planner-container');
+                const canvas = await html2canvas(element, { scale: 2 });
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('l', 'mm', 'a4');
+                const width = pdf.internal.pageSize.getWidth();
+                const height = (canvas.height * width) / canvas.width;
+                pdf.addImage(imgData, 'PNG', 0, 10, width, height);
+                pdf.save('haftalik-program.pdf');
+            } catch (e) { alert("PDF oluşturma hatası. Tarayıcı desteğini kontrol edin."); }
         }
     </script>
 </body>
